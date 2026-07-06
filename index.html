@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Signal Check - Job Legitimacy Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0F1219;
+    --panel:#161B26;
+    --panel-2:#1D2330;
+    --border:#2A3142;
+    --text:#EAECF2;
+    --muted:#8A93A8;
+    --accent:#6C7CFF;
+    --good:#34D399;
+    --warn:#FBBF24;
+    --bad:#F0554B;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(600px 300px at 15% -5%, rgba(108,124,255,0.16), transparent 60%),
+      radial-gradient(500px 260px at 90% 0%, rgba(52,211,153,0.10), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:48px 20px 64px;
+  }
+  .page{max-width:640px;margin:0 auto;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 3px rgba(108,124,255,0.25);
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:34px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    margin:0 0 10px;
+  }
+  .sub{
+    color:var(--muted);
+    font-size:15.5px;
+    line-height:1.55;
+    margin:0 0 32px;
+    max-width:52ch;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:26px;
+  }
+  .tabs{
+    display:inline-flex;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:99px;
+    padding:4px;
+    margin-bottom:24px;
+    gap:4px;
+  }
+  .tab{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--muted);
+    background:none;
+    border:none;
+    padding:9px 18px;
+    border-radius:99px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+  }
+  .tab.active{
+    background:var(--accent);
+    color:#0F1219;
+  }
+  .tab:not(.active):hover{color:var(--text);}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  @media(max-width:520px){.row{grid-template-columns:1fr;}}
+  label{
+    display:block;
+    font-size:12.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  input, textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:9px;
+    padding:11px 12px;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input::placeholder, textarea::placeholder{color:#5B6479;}
+  input:focus-visible, textarea:focus-visible, button:focus-visible, .link-btn:focus-visible{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(108,124,255,0.25);
+  }
+  textarea{resize:vertical;min-height:78px;line-height:1.5;}
+  .field{margin-bottom:14px;}
+  .actions{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:12px;flex-wrap:wrap;}
+  button.primary{
+    background:var(--accent);
+    color:#0F1219;
+    border:none;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    padding:13px 22px;
+    border-radius:9px;
+    cursor:pointer;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  button.primary:hover{transform:translateY(-1px);}
+  button.primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .link-btn{
+    background:none;border:none;color:var(--muted);
+    font-family:'Inter',sans-serif;font-size:13.5px;
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+    padding:4px;
+  }
+  .link-btn:hover{color:var(--text);}
+  .hidden{display:none !important;}
+
+  .loading-panel{text-align:center;padding:44px 26px;}
+  .radar{
+    width:88px;height:88px;margin:0 auto 22px;position:relative;
+  }
+  .radar span{
+    position:absolute;inset:0;border-radius:50%;
+    border:1.5px solid var(--accent);
+    opacity:0;
+    animation:pulse 2.1s ease-out infinite;
+  }
+  .radar span:nth-child(2){animation-delay:.7s;}
+  .radar span:nth-child(3){animation-delay:1.4s;}
+  .radar::after{
+    content:"";position:absolute;top:50%;left:50%;
+    width:10px;height:10px;margin:-5px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 16px 2px rgba(108,124,255,0.7);
+  }
+  @keyframes pulse{
+    0%{transform:scale(0.3);opacity:0.9;}
+    100%{transform:scale(1.35);opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .radar span{animation:none;opacity:0.35;}
+  }
+  .status-text{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--muted);
+    min-height:18px;
+  }
+  .loading-note{color:var(--muted);font-size:12.5px;margin-top:14px;}
+
+  .result-panel{opacity:0;transform:translateY(6px);transition:opacity .5s ease, transform .5s ease;}
+  .result-panel.show{opacity:1;transform:translateY(0);}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:6px 0 8px;}
+  .gauge-box{position:relative;width:200px;height:120px;}
+  .gauge-box svg{display:block;}
+  .gauge-score-overlay{
+    position:absolute;left:0;right:0;bottom:2px;
+    display:flex;justify-content:center;align-items:flex-end;
+  }
+  .gauge-score{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:40px;font-weight:600;line-height:1;
+  }
+  .gauge-max{font-size:16px;color:var(--muted);margin-left:4px;}
+  .pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;letter-spacing:0.04em;
+    padding:5px 12px;border-radius:99px;
+    margin-top:10px;font-weight:600;
+  }
+  .summary-text{
+    text-align:center;color:var(--muted);
+    font-size:14.5px;line-height:1.55;
+    max-width:46ch;margin:14px auto 26px;
+  }
+  .cat{
+    border-top:1px solid var(--border);
+    padding:16px 0;
+  }
+  .cat-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .cat-name{font-weight:600;font-size:14.5px;}
+  .cat-score{font-family:'IBM Plex Mono', monospace;font-size:13px;color:var(--muted);}
+  .bar-track{background:var(--panel-2);border-radius:99px;height:6px;overflow:hidden;margin-bottom:10px;}
+  .bar-fill{height:100%;border-radius:99px;width:0%;transition:width 1s ease;}
+  .notes{margin:0;padding-left:18px;color:var(--muted);font-size:13.5px;line-height:1.6;}
+  .recommendation{
+    margin-top:22px;padding:16px 18px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:10px;
+    font-size:14px;line-height:1.55;
+  }
+  .recommendation b{font-family:'Space Grotesk',sans-serif;}
+  .reset-row{text-align:center;margin-top:22px;}
+
+  .error-panel{
+    background:rgba(240,85,75,0.08);
+    border:1px solid rgba(240,85,75,0.35);
+    border-radius:var(--radius);
+    padding:22px 24px;color:var(--text);font-size:14px;line-height:1.55;
+  }
+  .error-panel b{color:var(--bad);}
+
+  .lookup-stat{
+    text-align:center;font-size:12px;color:var(--muted);
+    font-family:'IBM Plex Mono', monospace;
+    margin:-14px 0 22px;
+  }
+  .next-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+  .secondary-btn{
+    background:transparent;color:var(--accent);
+    border:1px solid var(--accent);
+    font-family:'Space Grotesk', sans-serif;font-weight:600;font-size:13.5px;
+    padding:10px 16px;border-radius:9px;cursor:pointer;
+    transition:background .15s ease;
+  }
+  .secondary-btn:hover{background:rgba(108,124,255,0.1);}
+  .tailor-panel{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+  .tailor-panel textarea{margin:10px 0 12px;min-height:100px;}
+  .tailor-output{
+    margin-top:16px;padding:14px 16px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:10px;
+  }
+  .tailor-output-text{font-size:13.5px;line-height:1.6;white-space:pre-wrap;margin-bottom:10px;}
+  .tailor-panel input[type="file"]{
+    width:100%;background:transparent;border:none;padding:8px 0;
+    color:var(--muted);font-size:13px;
+  }
+  .resume-file-status{font-size:12px;color:var(--muted);margin-top:2px;min-height:16px;}
+  .saved-cv-mock{
+    margin:10px 0 18px;padding:12px 14px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
+  }
+  .saved-cv-mock select{margin-top:6px;opacity:0.6;cursor:not-allowed;}
+  .mock-note{font-size:11.5px;color:var(--muted);margin-top:8px;font-style:italic;}
+  .post-confirm{
+    margin-top:20px;padding:14px 16px;
+    background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.35);
+    border-radius:10px;font-size:13.5px;color:var(--text);
+  }
+
+  .example-banner{
+    font-family:'IBM Plex Mono', monospace;
+    text-align:center;color:var(--warn);
+    background:rgba(251,191,36,0.12);
+    border:1.5px solid rgba(251,191,36,0.5);
+    border-radius:8px;
+    padding:14px 16px;margin-bottom:20px;
+  }
+  .example-banner .line1{font-size:12.5px;font-weight:600;letter-spacing:0.08em;}
+  .example-banner .line2{font-size:12px;color:var(--muted);margin-top:5px;font-family:'Inter',sans-serif;letter-spacing:0;}
+
+  footer{
+    margin-top:34px;color:var(--muted);font-size:12.5px;line-height:1.6;
+    border-top:1px solid var(--border);padding-top:18px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow" id="eyebrow">Concept prototype - a trust layer, not a gotcha tool</div>
+  <h1 id="pageTitle">Signal Check</h1>
+  <p class="sub" id="pageSub">Before you spend an hour tailoring a resume for it - spend 20 seconds checking if this job is actually hiring. Paste what you've got below.</p>
+
+  <div class="tabs">
+    <button type="button" class="tab active" id="tabCandidate">I'm job hunting</button>
+    <button type="button" class="tab" id="tabEmployer">I'm hiring</button>
+  </div>
+
+  <form class="panel" id="formPanel">
+    <div class="row">
+      <div class="field">
+        <label for="jobTitle">Job title</label>
+        <input id="jobTitle" placeholder="e.g. Senior Product Manager" />
+      </div>
+      <div class="field">
+        <label for="company">Company</label>
+        <input id="company" placeholder="e.g. Acme Corp" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="jobUrl">Posting URL <span style="opacity:.6">(optional)</span></label>
+      <input id="jobUrl" placeholder="https://..." />
+      <div style="font-size:11.5px;color:var(--muted);margin-top:5px;">LinkedIn links usually can't be read directly (they block bots) - paste the description text below instead for those.</div>
+    </div>
+    <div class="field">
+      <label for="companyUrl">Company website <span style="opacity:.6">(optional - much more reliable than searching by name alone)</span></label>
+      <input id="companyUrl" placeholder="https://acmecorp.com" />
+    </div>
+    <div class="field">
+      <label for="jobLocation">Location / country <span style="opacity:.6">(optional - improves which job boards get checked)</span></label>
+      <input id="jobLocation" placeholder="e.g. Bulgaria, Sofia, Remote-US" />
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--muted);font-weight:400;">
+        <input type="checkbox" id="isRemote" style="width:auto;" />
+        This is a fully remote role - also check remote-specific job boards
+      </label>
+    </div>
+    <div class="field">
+      <label for="jobDesc">Job description <span style="opacity:.6">(optional, but improves the read)</span></label>
+      <textarea id="jobDesc" placeholder="Paste the full posting text here for deeper content analysis..."></textarea>
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="scanBtn">Scan this job</button>
+      <button type="button" class="link-btn" id="exampleBtn">Try an example instead</button>
+    </div>
+  </form>
+
+  <form class="panel hidden" id="employerFormPanel">
+    <div class="row">
+      <div class="field">
+        <label for="empJobTitle">Job title</label>
+        <input id="empJobTitle" placeholder="e.g. Senior Product Manager" />
+      </div>
+      <div class="field">
+        <label for="empCompany">Company</label>
+        <input id="empCompany" placeholder="e.g. Acme Corp" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="empJobUrl">Live posting URL <span style="opacity:.6">(optional, if already published)</span></label>
+      <input id="empJobUrl" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label for="empLocation">Location / country <span style="opacity:.6">(optional - improves compliance advice)</span></label>
+      <input id="empLocation" placeholder="e.g. Bulgaria, Ontario, Remote-US" />
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--muted);font-weight:400;">
+        <input type="checkbox" id="empIsRemote" style="width:auto;" />
+        This is a fully remote role
+      </label>
+    </div>
+    <div class="field">
+      <label for="empJobDesc">Your job description</label>
+      <textarea id="empJobDesc" placeholder="Paste the posting text you're about to publish (or already have live)..." style="min-height:120px;"></textarea>
+    </div>
+    <div class="actions">
+      <button type="button" class="primary" id="empScanBtn">Grade my posting</button>
+      <button type="button" class="link-btn" id="empExampleBtn">Try an example instead</button>
+    </div>
+  </form>
+
+  <div class="panel loading-panel hidden" id="loadingPanel">
+    <div class="radar"><span></span><span></span><span></span></div>
+    <div class="status-text" id="statusText">Checking the company's careers page…</div>
+    <div class="loading-note">Usually takes 10–20 seconds - it's researching this live.</div>
+  </div>
+
+  <div class="panel result-panel hidden" id="resultPanel">
+    <div class="gauge-wrap">
+      <div class="gauge-box">
+        <svg viewBox="0 0 200 120" width="200" height="120">
+          <path d="M20,110 A80,80 0 0,1 180,110" stroke="#262C3B" stroke-width="14" fill="none" stroke-linecap="round"/>
+          <path id="gaugeFg" d="M20,110 A80,80 0 0,1 180,110" stroke="var(--good)" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="251.33" style="transition:stroke-dashoffset 1.1s ease, stroke 1.1s ease;"/>
+        </svg>
+        <div class="gauge-score-overlay">
+          <div class="gauge-score"><span id="scoreNum">--</span><span class="gauge-max">/100</span></div>
+        </div>
+      </div>
+      <div class="pill" id="riskPill">-</div>
+    </div>
+    <p class="summary-text" id="summaryText"></p>
+    <div class="lookup-stat" id="lookupStat"></div>
+    <div id="categories"></div>
+    <div class="recommendation" id="recommendation"></div>
+
+    <div class="next-actions hidden" id="candidateActions">
+      <button type="button" class="secondary-btn" id="tailorCvBtn">Tailor my CV for this job</button>
+      <button type="button" class="secondary-btn" id="tailorLetterBtn">Write a motivational letter</button>
+    </div>
+
+    <div class="next-actions hidden" id="employerActions">
+      <button type="button" class="primary" id="postItBtn">Post it</button>
+    </div>
+
+    <div class="tailor-panel hidden" id="tailorPanel">
+      <button type="button" class="link-btn" id="savedCvToggle">Already have saved CVs?</button>
+      <div class="saved-cv-mock hidden" id="savedCvMock">
+        <label for="savedCvSelect">Select a saved CV</label>
+        <select id="savedCvSelect" disabled>
+          <option>Software Engineer Resume - updated 3 days ago</option>
+          <option>Marketing CV - updated 2 weeks ago</option>
+        </select>
+        <div class="mock-note">Illustrative only - this would list your real saved resumes here.</div>
+      </div>
+
+      <label for="resumeFile">Upload your CV <span style="opacity:.6">(PDF or DOCX, max 2MB)</span></label>
+      <input type="file" id="resumeFile" accept=".pdf,.docx" />
+      <div class="resume-file-status" id="resumeFileStatus"></div>
+
+      <label for="resumeInput" id="tailorLabel" style="margin-top:14px;display:block;">Or paste your resume text directly</label>
+      <textarea id="resumeInput" placeholder="Paste your resume text, or just summarize your background..."></textarea>
+      <button type="button" class="primary" id="generateBtn">Generate</button>
+      <div class="tailor-output hidden" id="tailorOutput">
+        <div class="tailor-output-text" id="tailorOutputText"></div>
+        <button type="button" class="link-btn" id="copyOutputBtn">Copy</button>
+      </div>
+    </div>
+
+    <div class="post-confirm hidden" id="postConfirm">
+      Ready to publish. In the full product, this would go straight to your connected job board.
+    </div>
+
+    <div class="reset-row"><button type="button" class="link-btn" id="resetBtn">Scan another job</button></div>
+  </div>
+
+  <div class="error-panel hidden" id="errorPanel">
+    <b>Scan didn't complete.</b>
+    <div id="errorMsg" style="margin-top:6px;"></div>
+    <div id="errorDetail" style="margin-top:10px;font-family:'IBM Plex Mono', monospace;font-size:11.5px;color:var(--muted);word-break:break-word;"></div>
+    <div class="reset-row" style="margin-top:14px;"><button type="button" class="link-btn" id="retryBtn">Try again</button></div>
+  </div>
+
+  <footer>
+    This runs on a small server that holds the API key, with live web search on the job-hunting side. Scores are a research signal, not a verdict - always use judgment, and see it as a starting point for a conversation, not an accusation.
+  </footer>
+</div>
+
+<script>
+const formPanel = document.getElementById('formPanel');
+const employerFormPanel = document.getElementById('employerFormPanel');
+const loadingPanel = document.getElementById('loadingPanel');
+const resultPanel = document.getElementById('resultPanel');
+const errorPanel = document.getElementById('errorPanel');
+const statusText = document.getElementById('statusText');
+const scanBtn = document.getElementById('scanBtn');
+const empScanBtn = document.getElementById('empScanBtn');
+const tabCandidate = document.getElementById('tabCandidate');
+const tabEmployer = document.getElementById('tabEmployer');
+const eyebrow = document.getElementById('eyebrow');
+const pageTitle = document.getElementById('pageTitle');
+const pageSub = document.getElementById('pageSub');
+
+window.addEventListener('error', (e) => console.error('Unhandled error:', e.message));
+window.addEventListener('unhandledrejection', (e) => console.error('Unhandled rejection:', e.reason));
+
+let mode = 'candidate';
+let statusInterval;
+
+const copy = {
+  candidate: {
+    eyebrow: "Concept prototype - a trust layer, not a gotcha tool",
+    title: "Signal Check",
+    sub: "Before you spend an hour tailoring a resume for it - spend 20 seconds checking if this job is actually hiring. Paste what you've got below.",
+    statusPhases: [
+      "Checking the company's careers page…",
+      "Looking for repost history across job boards…",
+      "Scanning Glassdoor & Reddit chatter…",
+      "Weighing the signal…"
+    ]
+  },
+  employer: {
+    eyebrow: "Concept prototype - the same rubric, from the other side",
+    title: "Grade my posting",
+    sub: "Candidates are quietly running this check on your listing already. See what they see before you publish, and fix what's actually fixable.",
+    statusPhases: [
+      "Reading for salary & compensation transparency…",
+      "Checking requirements against the role level…",
+      "Scanning tone and credibility signals…",
+      "Drafting fixes…"
+    ]
+  }
+};
+
+function setMode(newMode){
+  mode = newMode;
+  tabCandidate.classList.toggle('active', mode === 'candidate');
+  tabEmployer.classList.toggle('active', mode === 'employer');
+  formPanel.classList.toggle('hidden', mode !== 'candidate');
+  employerFormPanel.classList.toggle('hidden', mode !== 'employer');
+  resultPanel.classList.add('hidden');
+  resultPanel.classList.remove('show');
+  errorPanel.classList.add('hidden');
+  eyebrow.textContent = copy[mode].eyebrow;
+  pageTitle.textContent = copy[mode].title;
+  pageSub.textContent = copy[mode].sub;
+}
+tabCandidate.addEventListener('click', () => setMode('candidate'));
+tabEmployer.addEventListener('click', () => setMode('employer'));
+
+document.getElementById('exampleBtn').addEventListener('click', () => {
+  document.getElementById('jobTitle').value = "Senior Software Engineer";
+  document.getElementById('company').value = "Netflix";
+  document.getElementById('jobUrl').value = "";
+  document.getElementById('jobLocation').value = "Remote, US";
+  document.getElementById('jobDesc').value = "We are looking for a rockstar engineer to join our fast-paced team. Must be a self-starter with strong communication skills. Competitive salary. Immediate start available. Wide range of responsibilities across the stack.";
+  handleCandidateScan();
+});
+
+document.getElementById('empExampleBtn').addEventListener('click', () => {
+  document.getElementById('empJobTitle').value = "Senior Software Engineer";
+  document.getElementById('empCompany').value = "Acme Corp";
+  document.getElementById('empJobUrl').value = "";
+  document.getElementById('empJobDesc').value = "We are looking for a rockstar engineer to join our fast-paced team. Must be a self-starter with strong communication skills. Competitive salary. Immediate start available. Wide range of responsibilities across the stack.";
+  handleEmployerScan();
+});
+
+let lastJobContext = null;
+
+function handleCandidateScan(){
+  const title = document.getElementById('jobTitle').value.trim();
+  const company = document.getElementById('company').value.trim();
+  const url = document.getElementById('jobUrl').value.trim();
+  const companyUrl = document.getElementById('companyUrl').value.trim();
+  const location = document.getElementById('jobLocation').value.trim();
+  const isRemote = document.getElementById('isRemote').checked;
+  const jd = document.getElementById('jobDesc').value.trim();
+
+  if(!title || !company){
+    showError("Add at least a job title and company name - that's the minimum needed to search.", scanBtn);
+    return;
+  }
+  lastJobContext = { title, company, url, jd };
+  runScan({ btn: scanBtn, withSearch: true, prompt: buildCandidatePrompt(title, company, url, companyUrl, location, isRemote, jd) });
+}
+
+function handleEmployerScan(){
+  const title = document.getElementById('empJobTitle').value.trim();
+  const company = document.getElementById('empCompany').value.trim();
+  const url = document.getElementById('empJobUrl').value.trim();
+  const location = document.getElementById('empLocation').value.trim();
+  const isRemote = document.getElementById('empIsRemote').checked;
+  const jd = document.getElementById('empJobDesc').value.trim();
+
+  if(!jd){
+    showError("Paste the job description text - that's what gets graded.", empScanBtn);
+    return;
+  }
+  lastJobContext = { title, company, url, jd };
+  runScan({ btn: empScanBtn, withSearch: false, prompt: buildEmployerPrompt(title, company, url, location, isRemote, jd) });
+}
+
+scanBtn.addEventListener('click', handleCandidateScan);
+empScanBtn.addEventListener('click', handleEmployerScan);
+
+formPanel.addEventListener('submit', (e) => { e.preventDefault(); handleCandidateScan(); });
+employerFormPanel.addEventListener('submit', (e) => { e.preventDefault(); handleEmployerScan(); });
+
+async function runScan({btn, withSearch, prompt}){
+  showLoading(btn);
+
+  const attempt = async () => {
+    let response;
+    try{
+      response = await fetch('/api/claude', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ prompt, withSearch })
+      });
+    }catch(networkErr){
+      throw new Error(networkErr.message || 'Failed to reach the server');
+    }
+
+    if(!response.ok){
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error('HTTP ' + response.status + (errBody.error ? ': ' + errBody.error : ''));
+    }
+
+    const data = await response.json();
+
+    if(data.stop_reason === 'max_tokens'){
+      throw new Error('Response was cut off before finishing (ran out of token budget).');
+    }
+
+    const textBlocks = (data.content || [])
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+
+    const cleaned = textBlocks.replace(/```json|```/g, '').trim();
+    const jsonStart = cleaned.indexOf('{');
+    const jsonEnd = cleaned.lastIndexOf('}');
+    if(jsonStart === -1 || jsonEnd === -1){
+      throw new Error('No JSON object found in model output. Raw text: ' + cleaned.slice(0,180));
+    }
+    const sanitized = cleaned.slice(jsonStart, jsonEnd + 1).replace(/,(\s*[\]}])/g, '$1');
+    return JSON.parse(sanitized);
+  };
+
+  try{
+    let parsed;
+    try{
+      parsed = await attempt();
+    }catch(firstErr){
+      statusText.textContent = 'First pass hit a snag - retrying...';
+      parsed = await attempt();
+    }
+    showResult(parsed, btn);
+
+  }catch(err){
+    console.error('Scan failed:', err);
+    showError("Something interrupted the scan - could be an unusual input, a server hiccup, or the research ran out of room. Try again in a moment.", btn, err.message);
+  }
+}
+
+function buildCandidatePrompt(title, company, url, companyUrl, location, isRemote, jd){
+  return `You are assessing whether a job posting shows genuine signs of active, real hiring, or signs of being a "ghost job" (posted with no real intent to fill it soon) or a possible scam. You have a strict token budget - use at most 3 targeted web searches total, then stop searching and output the JSON immediately. Finishing valid JSON matters more than doing an extra search.
+
+Job title: ${title}
+Company: ${company}
+Company website: ${companyUrl || 'not provided'}
+Posting URL: ${url || 'not provided'}
+Location: ${location || 'not provided'}
+Remote role: ${isRemote ? 'yes' : 'not specified'}
+Pasted job description: ${jd || 'not provided by user'}
+
+Important honesty rule about the URL: many job platforms (LinkedIn especially, particularly personalized/recommended-feed URLs) block search engines and general web tools from reading individual listings. If you cannot actually retrieve real content from the given URL, do not claim you checked it - rely on the title, company, location, and pasted description instead, and say plainly in your notes if the URL itself wasn't accessible.
+
+Important note about small/generic-sounding company names: a bare name search can surface unrelated companies with similar names instead of the real one, especially for small employers. If a company website is provided, search that specific domain directly for a careers/jobs page rather than searching the company name alone - this is far more reliable. If no website is given and a name-based search returns clearly unrelated results (wrong industry, wrong size, wrong location), say so plainly rather than concluding the company has no web presence at all.
+
+Run exactly these 3 searches, in this order, and name the specific site you actually found results on (or say "not found") in the relevant category's notes:
+1. Whether this exact role is listed on the company's own official careers page - search the provided company website directly if given, otherwise search the company name plus "careers".
+2. A specific named job board check, not a vague "job boards" search:
+   - If "Remote role" is yes, check a major remote-specific board - We Work Remotely, Remote OK, or Remotive (pick the one most likely to be relevant to the role).
+   - Otherwise, if a location is given, identify and check the single most-used general or tech-specific job board for that country using your own knowledge - for example jobs.bg, JobTiger, or dev.bg (for tech roles) in Bulgaria, StepStone in Germany, Naukri in India.
+   - If no location or remote status is given, check a major global board instead (LinkedIn, Indeed, Glassdoor).
+   - Only substitute a freelance marketplace like Upwork or Fiverr if the role itself clearly reads as freelance/contract work.
+3. A broad search for "${title} ${company}" to see how widely this exact posting circulates and for how long, OR recent Glassdoor/Reddit/Blind commentary about this company's interview process - pick whichever seems more likely to surface something.
+
+Also analyze the pasted job description text directly (no search needed) for vague or generic duties, missing salary range, urgency language like "immediate start", unrealistic experience requirements for the level, and possible scam indicators such as requests for payment or equipment purchases.
+
+Do not invent specific facts you did not find or claim to have checked a platform you didn't actually search - if a category turns up no public signal, say so plainly and score it 50 (neutral) rather than guessing. Keep language measured and non-accusatory - describe patterns and signals, never declare with certainty that a specific company is committing fraud.
+
+Respond with ONLY a single JSON object, no markdown code fences, no commentary before or after it, exactly matching this shape:
+{"mode": "candidate", "overall_score": 0-100 integer (higher = more likely a genuine active opening), "risk_level": "Low" or "Medium" or "High" (risk this is a ghost job or scam), "confidence": "Low" or "Medium" or "High" (how much public signal was actually found), "summary": "1 short sentence", "categories": [{"name": "Posting Freshness & History", "score": 0-100, "notes": ["name the site checked and what was found"]}, {"name": "Employer Verification", "score": 0-100, "notes": ["name the site checked and what was found"]}, {"name": "Content Red Flags", "score": 0-100, "notes": ["short phrase"]}, {"name": "Community Signals", "score": 0-100, "notes": ["name the site checked and what was found"]}], "recommendation": "1 short actionable sentence"}
+
+Keep every note under 14 words, exactly 1 note per category. Keep summary and recommendation each under 20 words. Double-check there are no trailing commas before any closing ] or } - invalid JSON wastes the whole response. Brevity matters - you have a small token budget.`;
+}
+
+function buildEmployerPrompt(title, company, url, location, isRemote, jd){
+  return `You are a constructive job-posting coach helping an employer make their listing read as credible, specific, and appealing to serious candidates - the same way a resume checker coaches a job seeker. This is not an investigation; do not treat the employer as a suspect. Be direct but supportive.
+
+Job title: ${title || 'not provided'}
+Company: ${company || 'not provided'}
+Posting URL: ${url || 'not provided'}
+Location: ${location || 'not provided'}
+Remote role: ${isRemote ? 'yes' : 'not specified'}
+Job description to grade: ${jd}
+
+You have no way to verify the posting URL is live or matches this text - do not claim to have checked it, just use it as context.
+
+Grade the text on:
+1. Salary & Compensation Transparency - is there a real salary range or clear compensation signal, versus vague terms like "competitive salary"?
+2. Specificity & Realism - are duties and requirements concrete and matched to the seniority level, or generic and copy-pasted?
+3. Tone & Credibility Signals - does it avoid urgency pressure language and buzzword-only descriptions that read as low-effort or automated?
+4. Compliance-Style Disclosure - does it read like a listing for a genuinely open, currently-hiring role? If a location is given, reference the specific disclosure norm most relevant there (for example Ontario's vacancy-disclosure requirement, or New York's similar rule) rather than generic advice. If the role is remote, note that postings reaching multiple states or countries may need to satisfy more than one jurisdiction's rules. If no location is given, give general best-practice advice instead of naming a specific law.
+
+Do not invent statistics. Give concrete rewrite suggestions grounded only in the text provided.
+
+Respond with ONLY a single JSON object, no markdown code fences, no commentary before or after it, exactly matching this shape:
+{"mode": "employer", "overall_score": 0-100 integer (higher = reads as more credible and candidate-friendly), "risk_level": "Low" or "Medium" or "High" (how much this posting risks reading as low-intent to candidates), "confidence": "High", "summary": "1-2 plain sentences", "categories": [{"name": "Salary & Compensation Transparency", "score": 0-100, "notes": ["short phrase", "..."]}, {"name": "Specificity & Realism", "score": 0-100, "notes": ["..."]}, {"name": "Tone & Credibility Signals", "score": 0-100, "notes": ["..."]}, {"name": "Compliance-Style Disclosure", "score": 0-100, "notes": ["..."]}], "recommendation": "1 concrete, actionable rewrite suggestion"}
+
+Keep every note under 12 words. 1-3 notes per category. Double-check there are no trailing commas before any closing ] or } - invalid JSON wastes the whole response.`;
+}
+
+function showLoading(btn){
+  formPanel.classList.add('hidden');
+  employerFormPanel.classList.add('hidden');
+  resultPanel.classList.remove('show');
+  resultPanel.classList.add('hidden');
+  errorPanel.classList.add('hidden');
+  loadingPanel.classList.remove('hidden');
+  if(btn) btn.disabled = true;
+
+  const phases = copy[mode].statusPhases;
+  let i = 0;
+  statusText.textContent = phases[0];
+  statusInterval = setInterval(() => {
+    i = (i + 1) % phases.length;
+    statusText.textContent = phases[i];
+  }, 1900);
+}
+
+function tierColor(score){
+  if(score >= 70) return getCss('--good');
+  if(score >= 40) return getCss('--warn');
+  return getCss('--bad');
+}
+function getCss(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+function riskColor(risk){
+  if(risk === 'Low') return getCss('--good');
+  if(risk === 'Medium') return getCss('--warn');
+  return getCss('--bad');
+}
+
+function slugify(s){
+  return (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+}
+
+function computeJobKey(title, company, url){
+  if(url){
+    try{
+      const u = new URL(url);
+      return 'job-' + slugify(u.hostname + u.pathname);
+    }catch(e){}
+  }
+  if(!company && !title) return null;
+  return 'job-' + slugify(company) + '-' + slugify(title);
+}
+
+function getPersonId(){
+  let id = localStorage.getItem('signalcheck_person_id');
+  if(!id){
+    id = crypto.randomUUID();
+    localStorage.setItem('signalcheck_person_id', id);
+  }
+  return id;
+}
+
+async function getLookupCount(jobKey, shouldIncrement){
+  if(!jobKey) return null;
+  try{
+    const response = await fetch('/api/lookup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ jobKey, personId: getPersonId(), shouldIncrement })
+    });
+    const data = await response.json();
+    if(!data.available) return null;
+    return data.count;
+  }catch(e){
+    return null;
+  }
+}
+
+function renderLookupStat(count){
+  const el = document.getElementById('lookupStat');
+  if(count === null || count === undefined){
+    el.textContent = '';
+    return;
+  }
+  if(mode === 'employer'){
+    el.textContent = count === 0
+      ? 'No job seekers have checked this listing yet.'
+      : count === 1
+        ? '1 job seeker has also checked this listing.'
+        : count + ' job seekers have also checked this listing.';
+  } else {
+    el.textContent = count <= 1
+      ? "You're the first to check this listing."
+      : count + ' people have also looked up this listing.';
+  }
+}
+
+function showResult(parsed, btn){
+  clearInterval(statusInterval);
+  loadingPanel.classList.add('hidden');
+  if(btn) btn.disabled = false;
+
+  document.getElementById('candidateActions').classList.toggle('hidden', mode !== 'candidate');
+  document.getElementById('employerActions').classList.toggle('hidden', mode !== 'employer');
+  document.getElementById('tailorPanel').classList.add('hidden');
+  document.getElementById('tailorOutput').classList.add('hidden');
+  document.getElementById('resumeInput').value = '';
+  document.getElementById('postConfirm').classList.add('hidden');
+
+  const lookupEl = document.getElementById('lookupStat');
+  if(!lastJobContext){
+    lookupEl.textContent = '';
+  } else {
+    lookupEl.textContent = '...';
+    const jobKey = computeJobKey(lastJobContext.title, lastJobContext.company, lastJobContext.url);
+    getLookupCount(jobKey, mode === 'candidate').then(renderLookupStat).catch(() => renderLookupStat(null));
+  }
+
+  const score = Math.max(0, Math.min(100, Number(parsed.overall_score) || 0));
+  const risk = parsed.risk_level || 'Medium';
+  const confidence = parsed.confidence || 'Medium';
+  const color = riskColor(risk);
+
+  const gaugeFg = document.getElementById('gaugeFg');
+  const arcLength = 251.33;
+  gaugeFg.style.stroke = color;
+  document.getElementById('scoreNum').textContent = score;
+
+  const pill = document.getElementById('riskPill');
+  const pillLabel = mode === 'employer'
+    ? (risk === 'Low' ? 'READS AS CREDIBLE' : risk === 'Medium' ? 'MIXED - WORTH POLISHING' : 'READS AS LOW-INTENT')
+    : risk.toUpperCase() + ' RISK OF GHOST/SCAM';
+  pill.textContent = pillLabel;
+  pill.style.color = color;
+  pill.style.background = color + '22';
+  pill.style.border = '1px solid ' + color + '55';
+
+  const confNote = mode === 'candidate'
+    ? ` (confidence: ${confidence.toLowerCase()} - based on how much public signal was found)`
+    : '';
+  document.getElementById('summaryText').textContent = (parsed.summary || '') + confNote;
+
+  const catWrap = document.getElementById('categories');
+  catWrap.innerHTML = '';
+  (parsed.categories || []).forEach(cat => {
+    const catScore = Math.max(0, Math.min(100, Number(cat.score) || 50));
+    const c = tierColor(catScore);
+    const div = document.createElement('div');
+    div.className = 'cat';
+    div.innerHTML = `
+      <div class="cat-head">
+        <div class="cat-name">${escapeHtml(cat.name || '')}</div>
+        <div class="cat-score">${catScore}/100</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="background:${c};"></div></div>
+      <ul class="notes">${(cat.notes || []).map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul>
+    `;
+    catWrap.appendChild(div);
+    requestAnimationFrame(() => {
+      div.querySelector('.bar-fill').style.width = catScore + '%';
+    });
+  });
+
+  const recLabel = mode === 'employer' ? 'Top fix' : 'Bottom line';
+  document.getElementById('recommendation').innerHTML = `<b>${recLabel}:</b> ${escapeHtml(parsed.recommendation || '')}`;
+
+  resultPanel.classList.remove('hidden');
+  requestAnimationFrame(() => {
+    gaugeFg.style.strokeDashoffset = arcLength * (1 - score / 100);
+    resultPanel.classList.add('show');
+  });
+}
+
+function showError(msg, btn, detail){
+  clearInterval(statusInterval);
+  loadingPanel.classList.add('hidden');
+  resultPanel.classList.add('hidden');
+  if(btn) btn.disabled = false;
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('errorDetail').textContent = detail ? ('Technical detail: ' + detail) : '';
+  errorPanel.classList.remove('hidden');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+let tailorType = null;
+
+document.getElementById('tailorCvBtn').addEventListener('click', () => openTailorPanel('cv'));
+document.getElementById('tailorLetterBtn').addEventListener('click', () => openTailorPanel('letter'));
+
+function openTailorPanel(type){
+  tailorType = type;
+  document.getElementById('tailorLabel').textContent = type === 'cv'
+    ? 'Or paste your resume text directly'
+    : 'Or paste your resume/background directly - the letter will draw from this';
+  document.getElementById('generateBtn').textContent = type === 'cv' ? 'Generate tailored bullet points' : 'Generate letter';
+  document.getElementById('tailorOutput').classList.add('hidden');
+  document.getElementById('resumeFile').value = '';
+  document.getElementById('resumeFileStatus').textContent = '';
+  document.getElementById('savedCvMock').classList.add('hidden');
+  document.getElementById('tailorPanel').classList.remove('hidden');
+}
+
+document.getElementById('savedCvToggle').addEventListener('click', () => {
+  document.getElementById('savedCvMock').classList.toggle('hidden');
+});
+
+const loadedScripts = {};
+function loadScript(src){
+  if(!loadedScripts[src]){
+    loadedScripts[src] = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(script);
+    });
+  }
+  return loadedScripts[src];
+}
+
+async function extractPdfText(file){
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+  if(!window.pdfjsLib.GlobalWorkerOptions.workerSrc){
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const buffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: buffer}).promise;
+  let text = '';
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
+async function extractDocxText(file){
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js');
+  const buffer = await file.arrayBuffer();
+  const result = await window.mammoth.extractRawText({arrayBuffer: buffer});
+  return (result.value || '').trim();
+}
+
+document.getElementById('resumeFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const statusEl = document.getElementById('resumeFileStatus');
+  if(!file) return;
+
+  const maxSize = 2 * 1024 * 1024;
+  if(file.size > maxSize){
+    statusEl.textContent = 'That file is over 2MB - try a smaller file, or paste the text below instead.';
+    return;
+  }
+
+  const name = file.name.toLowerCase();
+  statusEl.textContent = 'Reading ' + file.name + '...';
+
+  try{
+    let text = '';
+    if(name.endsWith('.pdf')){
+      text = await extractPdfText(file);
+    } else if(name.endsWith('.docx')){
+      text = await extractDocxText(file);
+    } else {
+      statusEl.textContent = 'Please upload a PDF or DOCX file.';
+      return;
+    }
+    if(!text){
+      statusEl.textContent = "Couldn't find readable text in that file - paste it below instead.";
+      return;
+    }
+    document.getElementById('resumeInput').value = text;
+    statusEl.textContent = 'Loaded ' + file.name + ' - review the text below before generating.';
+  }catch(err){
+    console.error('Resume parsing failed:', err);
+    statusEl.textContent = "Couldn't read this file automatically - paste the text below instead.";
+  }
+});
+
+function buildTailorPrompt(type, ctx, resume){
+  const jobInfo = 'Job title: ' + (ctx.title || 'not provided') +
+    '\nCompany: ' + (ctx.company || 'not provided') +
+    '\nJob description: ' + (ctx.jd || 'not provided');
+
+  if(type === 'cv'){
+    return 'A job seeker wants resume bullet points tailored to a specific job, based only on their real, existing background. Never invent employers, titles, dates, or numbers they did not mention.\n\n' +
+      jobInfo + '\n\nCandidate background:\n' + resume +
+      '\n\nWrite 4 to 6 tailored resume bullet points that reframe their real experience toward what this job asks for. Use concrete outcomes only where the candidate already gave them. Plain text, one bullet per line starting with a dash, no markdown headers, ready to paste into a resume.';
+  }
+  return 'A job seeker wants a short cover letter tailored to a specific job, based only on their real, existing background. Never invent employers, titles, dates, or facts they did not mention.\n\n' +
+    jobInfo + '\n\nCandidate background:\n' + resume +
+    '\n\nWrite a concise, professional cover letter of 250 to 350 words connecting their real background to this specific role and company. Plain text, no markdown, ready to paste as a letter.';
+}
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  const resume = document.getElementById('resumeInput').value.trim();
+  const outputWrap = document.getElementById('tailorOutput');
+  const outputText = document.getElementById('tailorOutputText');
+  if(!resume){
+    outputText.textContent = 'Paste your background first.';
+    outputWrap.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('generateBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  try{
+    const prompt = buildTailorPrompt(tailorType, lastJobContext || {}, resume);
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ prompt, withSearch: false })
+    });
+    if(!response.ok){
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || ('HTTP ' + response.status));
+    }
+    const data = await response.json();
+    const text = (data.content || [])
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .join('\n')
+      .trim();
+    outputText.textContent = text || 'No output generated - try again.';
+  }catch(err){
+    console.error('Generation failed:', err);
+    outputText.textContent = "Couldn't generate this right now - try again in a moment.";
+  }
+
+  outputWrap.classList.remove('hidden');
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+});
+
+document.getElementById('copyOutputBtn').addEventListener('click', () => {
+  const text = document.getElementById('tailorOutputText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyOutputBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  });
+});
+
+document.getElementById('postItBtn').addEventListener('click', () => {
+  document.getElementById('employerActions').classList.add('hidden');
+  document.getElementById('postConfirm').classList.remove('hidden');
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  resultPanel.classList.add('hidden');
+  if(mode === 'candidate'){ formPanel.classList.remove('hidden'); } else { employerFormPanel.classList.remove('hidden'); }
+});
+document.getElementById('retryBtn').addEventListener('click', () => {
+  errorPanel.classList.add('hidden');
+  if(mode === 'candidate'){ formPanel.classList.remove('hidden'); } else { employerFormPanel.classList.remove('hidden'); }
+});
+</script>
+</body>
+</html>
